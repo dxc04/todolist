@@ -4,7 +4,7 @@ var app = new Vue({
     el: '#app',
     data: {
         tasks: [],
-        newtask: "Test",
+        newtask: "",
         options: {}
     },
     methods: {
@@ -102,7 +102,7 @@ var app = new Vue({
         updateTaskStatus(task) {
             axios.put('/tasks/'+ task.id +'?api_token='+user.api_token, task)
                 .then((response) => {
-                    console.debug(response.data);
+                    console.log(response.data);
                 })
                 .catch((error) => {
                     this.tasks.forEach((todo) => {

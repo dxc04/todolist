@@ -56,7 +56,7 @@
             <div class="col-lg-8 col-lg-offset-2">
                 <form @submit.prevent="createNewTask">
                     <div class="input-group input-group-lg">
-                        <input type="text" class="form-control input-lg" placeholder="(min 10 characters)" v-model="newtask" required>
+                        <input type="text" class="form-control input-lg" placeholder="(min 5 characters)" v-model="newtask" required>
                         <span class="input-group-btn">
                         <button type="submit" class="btn btn-default btn-lg">+ New Task</button>
                     </span>
