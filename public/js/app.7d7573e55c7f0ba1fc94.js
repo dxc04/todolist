@@ -28797,7 +28797,7 @@ var app = new Vue({
     el: '#app',
     data: {
         tasks: [],
-        newtask: "Test",
+        newtask: "",
         options: {}
     },
     methods: {
@@ -28897,7 +28897,7 @@ var app = new Vue({
             var _this3 = this;
 
             axios.put('/tasks/' + task.id + '?api_token=' + user.api_token, task).then(function (response) {
-                console.debug(response.data);
+                console.log(response.data);
             }).catch(function (error) {
                 _this3.tasks.forEach(function (todo) {
                     if (todo.id === task.id) {

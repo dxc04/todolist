@@ -16,12 +16,14 @@ class UsersTableSeeder extends Seeder
             'email' => 'anakin@starwars.com',
             'password' => bcrypt('secret'),
             'api_token' => str_random(60)
-        ],
-        [
-            'name'  => 'Luke Skywalker',
-            'email' => 'luke@starwars.com',
-            'password' => bcrypt('secret'),
-            'api_token' => str_random(60)
+        ]);
+        User::create([
+            [
+                'name'  => 'Luke Skywalker',
+                'email' => 'luke@starwars.com',
+                'password' => bcrypt('secret'),
+                'api_token' => str_random(60)
+            ]
         ]);
     }
 }
