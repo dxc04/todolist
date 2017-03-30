@@ -22,4 +22,7 @@ Route::get('/logout', 'Auth\LoginController@logout');
 
 Route::group(['middleware' => ['api', 'auth:api']], function() {
     Route::resource('tasks', 'TaskController', ['except' => ['show', 'create', 'edit']]);
+    Route::put('tasks/{task}/toggle', 'TaskController@toggleStatus')->name('tasks.toggle');
+    Route::get('activities', 'ActivityController@index')->name('activities');
+    Route::get('activities/last60minutes', 'ActivityController@last60Minutes')->name('activities.last60minutes');
 });
