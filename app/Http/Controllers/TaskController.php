@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use App\Task;
@@ -10,6 +11,34 @@ use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
+    protected $user;
+    public function __construct()
+    {
+        $this->user = Auth::guard('api')->user();
+    }
+
+    public function logCurrentStatus($request, $isNewTask = false)
+    {
+        $countCompleted = $request->statuses['completed'];
+        $countPending = $request->statuses['pending'];
+        if ($isNewTask) {
+            $countPending += 1;
+        } else {
+            if ($request->item['status']) {
+                $countCompleted -= ($request->statuses['completed'] > 0 ? 1 : 0);
+                $countPending += 1;
+            } else {
+                $countCompleted += 1;
+                $countPending -= ($request->statuses['pending'] > 0 ? 1 : 0);
+            }
+        }
+
+        $activity = $this->user->activities()->create([
+            'pending_tasks' => $countPending,
+            'completed_tasks' => $countCompleted
+        ]);
+        return $activity;
+    }
     /**
      * Display a listing of the resource.
      *
@@ -17,8 +46,7 @@ class TaskController extends Controller
      */
     public function index()
     {
-        $user = Auth::guard('api')->user();
-        return $user->tasks;
+        return $this->user->tasks;
     }
 
     /**
@@ -29,14 +57,24 @@ class TaskController extends Controller
      */
     public function store(Request $request)
     {
+
         $this->validate($request, [
-            'task' => 'required|min:5'
+            'item.task' => 'required|min:5',
+            'item.status' => 'required|boolean'
         ]);
-        $user = Auth::guard('api')->user();
-        $task = $user->tasks()->create([
-            'task' => $request->task
+        // Create a new task
+        $task = $this->user->tasks()->create([
+            'task' => $request->item['task'],
+            'status' => $request->item['status']
         ]);
-        return $task;
+
+        // Log current status
+        $activity = $this->logCurrentStatus($request, true);
+
+        return [
+            'task_item' => $task,
+            'user_activity' => $activity
+        ];
     }
 
     /**
@@ -48,32 +86,47 @@ class TaskController extends Controller
      */
     public function update(Request $request, $id)
     {
-//        throw new HttpResponseException(
-//            response()->json([
-//                'user_id' => ['Requested user has no privileges to modify this data.']
-//            ], 422)
-//        );
-        $user = Auth::guard('api')->user();
         $this->validate($request, [
-            'task' => 'required|min:5',
-            'status' => 'boolean',
-            'user_id' => Rule::in([$user->id])
+            'item.task' => 'required|min:5',
+            'item.status' => 'boolean',
+            'item.user_id' => Rule::in([$this->user->id])
         ]);
+
         $task = Task::find($id);
-        $task->task = $request->task;
-        $task->status = $request->status;
+        $task->task = $request->item['task'];
+        $task->status = $request->item['status'];
         $task->save();
+
         return $task;
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Toggle task status
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param \Illuminate\Http\Request $request
+     * @param                          $id
+     * @return mixed
      */
-    public function destroy($id)
+    public function toggleStatus(Request $request, $id)
     {
-        //
+        $this->validate($request, [
+            'item.status' => 'required|boolean',
+            'item.user_id' => Rule::in([$this->user->id]),
+            'statuses.pending' => 'required|numeric',
+            'statuses.completed' => 'required|numeric'
+        ]);
+
+        // Update task status
+        $task = Task::find($id);
+        $task->status = ! $request->item['status'];
+        $task->save();
+
+        // Log user statuses
+        $activity = $this->logCurrentStatus($request);
+
+        return [
+            'task_item' => $task,
+            'user_activity' => $activity
+            ];
     }
 }
