@@ -38,6 +38,7 @@ DB_PASSWORD={database password}
 ```
 **Run database migrations and seeders**
 ```
+php artisan migrate:reset
 php artisan migrate
 php artisan db:seed
 ```
