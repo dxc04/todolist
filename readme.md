@@ -1,4 +1,4 @@
-# ToDo List (with Burndown Chart) - Laravel, Vue.js & Highchart
+# ToDo List (with Burndown Chart) - Laravel, Vue.js & Chart.js
 Basic todo list, that allows users to register, log in, and create tasks that are saved against their account. It includes the dynamic burndown chart, that displays the number of tasks that were not yet completed at each minute in the last hour.
 ## Installation Steps
 **Clone the repo**
@@ -22,6 +22,11 @@ cp .env.example .env
 ```
 php artisan key:generate
 ```
+**Setup Timezone in .env**
+```
+APP_TZ=Pacific/Auckland
+```
+
 **Configure MySQL connection details in .env**
 ```
 DB_CONNECTION=mysql
@@ -39,11 +44,11 @@ php artisan db:seed
 ## Running the application
 Run the application in a **Virtual Host**
 
-#### Comes with some default users and tasks
+#### Comes with couple of default users
 User credentials are as follows
 ```
-1. Email: anakin@starwars.com | Password: starwars
-2. Email: luke@starwars.com | Password: starwars
+1. Email: anakin@starwars.com | Password: secret
+2. Email: luke@starwars.com | Password: secret
 ```
 ## PHPUnit Test
 To run the unit test, go to the project root and run
