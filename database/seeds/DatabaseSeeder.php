@@ -19,6 +19,6 @@ class DatabaseSeeder extends Seeder
             DB::table($table)->truncate();
         }
         $this->call(UsersTableSeeder::class);
-        $this->call(TasksTableSeeder::class);
+//        $this->call(TasksTableSeeder::class);
     }
 }
