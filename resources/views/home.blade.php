@@ -21,7 +21,7 @@
 </head>
 <body>
 <nav class="navbar navbar-default">
-    <div class="container">
+    <div class="container-fluid">
         <!-- Brand and toggle get grouped for better mobile display -->
         <div class="navbar-header">
             <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
@@ -42,11 +42,11 @@
 </nav>
 
 <div id="app" class="container">
-    {{-- Highcharts Section --}}
+    {{-- Chartjs Section --}}
     <div class="row">
         <div class="col-md-12">
             <h2>Burndown Chart: <span style="color:royalblue">{!! Auth::user()->name !!}</span></h2>
-            <highcharts :options="options" ref="highcharts"></highcharts>
+            <line-chart :chart-data="datacollection" :options="options" :width="1200":height="500"></line-chart>
         </div>
     </div>
 
@@ -70,25 +70,17 @@
     <div class="row">
         <div class="col-md-6">
             <h3 class="text-center">Pending Tasks <span class="label label-warning">@{{ pendingTasks.length }}</span></h3>
-            <ul class="list-group">
-                <li class="list-group-item" v-for="todo in pendingTasks" v-if="!todo.status">
-                    <label>
-                        <input type="checkbox" v-model="todo.status" @click="updateTaskStatus(todo)"> @{{ todo.task }}
-                    </label>
-                </li>
-            </ul>
+            <div class="list-group">
+                <a class="list-group-item" v-for="todo in pendingTasks" @click="toggleTaskStatus(todo)">@{{ todo.task }} <span class="glyphicon glyphicon-ok" aria-hidden="true"></span></a>
+            </div>
         </div>
 
         {{--Completed Task--}}
         <div class="col-md-6">
             <h3 class="text-center">Completed Tasks <span class="label label-success">@{{ completedTasks.length }}</span></h3>
-            <ul class="list-group">
-                <li class="list-group-item" v-for="todo in completedTasks" v-if="todo.status">
-                    <label>
-                        <input type="checkbox" v-model="todo.status" @click="updateTaskStatus(todo)"> @{{ todo.task }}
-                    </label>
-                </li>
-            </ul>
+            <div class="list-group">
+                <a class="list-group-item" v-for="todo in completedTasks" @click="toggleTaskStatus(todo)">@{{ todo.task }} <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span></a>
+            </div>
         </div>
     </div>
 </div>

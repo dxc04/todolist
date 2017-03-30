@@ -1,12 +1,12 @@
 import Vue from 'vue';
-import VueHighcharts from 'vue-highcharts';
-import Highcharts from 'highcharts/highcharts';
+
 import lodash from 'lodash';
 // import BootstrapSass from 'bootstrap-sass';
 import axios from 'axios';
+import moment from 'moment';
 
 window.Vue = Vue;
-Vue.use(VueHighcharts, { Highcharts });
+window.moment = moment;
 
 window._ = lodash;
 // window.$ = window.jQuery = require('jquery');

@@ -1,117 +1,148 @@
 require('./bootstrap');
+import LineChart from './components/LineChart';
 
 var app = new Vue({
     el: '#app',
+    components: {
+        LineChart
+    },
     data: {
         tasks: [],
         newtask: "",
-        options: {}
+        options: {},
+        activities: [],
+        datacollection: null,
+        labels: [],
+        pending_tasks_count: []
     },
     methods: {
-        loadChartOptions() {
-            var self = this;
-            var chartOptions = {
-                chart: {
-                    type: 'spline',
-                    marginRight: 10,
-                    events: {
-                        load: function () {
-                            // set up the updating of the chart each second
-                            var series = this.series[0];
-                            setInterval(function () {
-                                var x = (new Date()).getTime(), // current time
-                                    y = self.$root.pendingTasks.length;
-                                series.addPoint([x, y], true, true);
-                            }, 60000);
-                        }
-                    }
-                },
-                title: {
-                    text: 'Burndown Chart',
-                    x: -20 //center
-                },
-                subtitle: {
-                    text: 'Number of tasks that were not yet completed at each minute',
-                    x: -20
-                },
-                xAxis: {
-                    type: 'datetime',
-                    tickPixelInterval: 150
-                },
-                yAxis: {
-                    title: {
-                        text: 'Tasks Pending'
-                    },
-                    plotLines: [{
-                        value: 0,
-                        width: 1,
-                        color: '#808080'
-                    }]
-                },
-                tooltip: {
-                    formatter: function () {
-                        return '<b>' + this.series.name + ': ' + this.y + '</b>';
-                    }
-                },
-                legend: {
-                    enabled: false
-                },
-                exporting: {
-                    enabled: false
-                },
-                series: [{
-                    name: 'Task Pending',
-                    data: (function () {
-                        // generate an array of random data
-                        var data = [],
-                            time = (new Date()).getTime(),
-                            i;
-
-                        for (i = -19; i <= 0; i += 1) {
-                            data.push({
-                                x: time + i * 1000,
-                                y: self.$root.pendingTasks.length
-                            });
-                        }
-                        return data;
-                    }())
-                }]
+        /**
+         * To setup chart options
+         */
+        setupChartOptions() {
+            this.options = {
+                responsive: false,
+                maintainAspectRatio: false
             };
-            this.options = chartOptions;
         },
+        /**
+         * To fetch all tasks associated with the user
+         */
         fetchAllTasks() {
             axios.get('/tasks?api_token='+user.api_token)
                 .then((response) => {
                     this.tasks = response.data;
-                    this.loadChartOptions();
                 })
                 .catch(function (error) {
                     console.error(error);
                 });
         },
+        /**
+         * Helper function to generate the request data
+         * @param taskItem
+         * @returns {{item: *, statuses: {pending: Number, completed: Number}}}
+         */
+        generateRequestData(taskItem) {
+            if (typeof(taskItem) !== 'object') {
+                let taskObject = {
+                    task: taskItem,
+                    status: false
+                };
+                taskItem = taskObject;
+            }
+            var data = {
+                item: taskItem,
+                statuses: {
+                    pending: this.pendingTasks.length,
+                    completed: this.completedTasks.length
+                }
+            };
+            return data;
+        },
+        /**
+         * To create new task
+         */
         createNewTask() {
-            axios.post('/tasks?api_token='+user.api_token, { task: this.newtask })
+            axios.post('/tasks?api_token='+user.api_token, this.generateRequestData(this.newtask))
                 .then((response) => {
-                    this.tasks.push(response.data);
+                    this.tasks.push(response.data.task_item);
                     this.newtask = '';
+                    this.fillData({
+                        label: moment(response.data.user_activity.created_at).format("HH:mm:ss"),
+                        data: response.data.user_activity.pending_tasks
+                    });
                 })
                 .catch((error) => {
                     console.error(error);
                 });
         },
-        updateTaskStatus(task) {
-            axios.put('/tasks/'+ task.id +'?api_token='+user.api_token, task)
+        /**
+         * To toggle the status of the task
+         * @param taskItem
+         */
+        toggleTaskStatus(taskItem) {
+            axios.put('/tasks/'+ taskItem.id +'/toggle?api_token='+user.api_token, this.generateRequestData(taskItem))
                 .then((response) => {
-                    console.log(response.data);
+                    taskItem.status = response.data.task_item.status;
+                    this.fillData({
+                        label: moment(response.data.user_activity.created_at).format("HH:mm:ss"),
+                        data: response.data.user_activity.pending_tasks
+                    });
                 })
                 .catch((error) => {
                     this.tasks.forEach((todo) => {
-                        if (todo.id === task.id) {
-                            todo.status = ! task.status;
+                        if (todo.id === taskItem.id) {
+                            todo.status = ! taskItem.status;
                         }
                     });
                     console.error('Logging the error', error);
                 });
+        },
+        /**
+         * To fetch last house activities of the user
+         */
+        fetchActivitiesForLast60Minutes() {
+            axios.get('/activities/last60minutes?api_token='+user.api_token)
+                .then((response) => {
+                    var activities = response.data;
+                    console.info('Activities', response.data);
+                    activities.forEach((activity) => {
+                        this.labels.push(moment(activity.created_at).format("HH:mm:ss"));
+                        this.pending_tasks_count.push(activity.pending_tasks);
+                    }, this.labels, this.pending_tasks_count);
+                    console.log('Activity Data: ', this.pending_tasks_count);
+                    this.fillData();
+                })
+                .catch(function (error) {
+                    console.error('Fetch Activities: ', error);
+                });
+        },
+        /**
+         * To fill data into the chart
+         * @param newData
+         */
+        fillData (newData = {}) {
+            if (! _.isEmpty(newData)) {
+                this.labels.push(newData.label);
+                this.pending_tasks_count.push(newData.data);
+                // console.debug(this.$refs._chart);
+            }
+            this.datacollection = {
+                labels: this.labels,
+                datasets: [
+                    {
+                        label: "Pending Tasks",
+                        pointRadius: 10,
+                        backgroundColor: '#c7ecea',
+                        borderColor: '#5E9732',
+                        strokeColor: "rgba(151,187,205,1)",
+                        pointColor: "#226D82",
+                        pointBorderWidth: 2,
+                        pointBorderColor: "#5E9732",
+                        data: this.pending_tasks_count
+                    }
+                ]
+            };
         }
     },
     computed: {
@@ -123,7 +154,9 @@ var app = new Vue({
         }
     },
     mounted() {
+        this.setupChartOptions();
         this.fetchAllTasks();
+        this.fetchActivitiesForLast60Minutes();
+        this.fillData();
     }
 });
-
